@@ -1,5 +1,4 @@
 from .handler import RequestHandler
-from .tables import *
 from .utils import *
 
 
@@ -8,49 +7,51 @@ class SqlApiError(Exception):
 
 
 class API(RequestHandler):
-    def __init__(self, db_path):
+    def __init__(self, tables_file, db_path=None):
         """
+        :param tables_file: Imported file with table classes
+        :type tables_file: module
         :param db_path: The path to the file
         :type db_path: str
         """
-        RequestHandler.__init__(self, db_path)
-        try:
-            self.data_bases = globals()['data_bases']
-        except KeyError:
-            raise SqlApiError("The variable data_bases is not listed in the tables.py file")
-        if len(data_bases) == 0:
-            raise SqlApiError("The tables.py file does not show the table classes")
-        try:
-            for db in self.data_bases:
-                if shadow_fields(db):
-                    raise SqlApiError(f"Discovered the same fields in the table {type(db).__name__}")
-        except ValueError:
-            pass
 
-    def save(self, *table_classes):
+        self._active = False
+        if db_path:
+            RequestHandler.__init__(self, db_path)
+            self._active = True
+        self._databases = tables_file
+        if type(self._databases).__name__ != 'module':
+            raise SqlApiError("The tables_file option should be imported file with table classes")
+        self._get_databases()
+
+    def save(self, *table_classes, table_classes_=()):
         """
         Saves all changes
         :param table_classes: Object or objects received by filter function
+        :param table_classes_: Object or objects received by filter function
         :return: Successfully
         """
+
+        self._check_active()
+        table_classes = table_classes_ if len(table_classes) == 0 else table_classes
         if len(table_classes) != 0:
             for table in table_classes:
                 fields = []
+                old_table = self.filter(type(table).__name__.lower(), 'classes', id=table.id)
                 for key, value in vars(table).items():
                     if key != 'id':
-                        fields.append('{}={}'.format(key, add_quotes(value)))
-                self._cursor.execute("UPDATE '%s' SET %s WHERE id = %s" % (type(table).__name__.lower(),
-                                                                           str(', '.join(fields)), table.id))
-                self.commit()
+                        if value != get_field(old_table, key):
+                            fields.append('{}={}'.format(key, add_quotes(value)))
+                if len(fields) != 0:
+                    self._cursor.execute("UPDATE '%s' SET %s WHERE id = %s" % (type(table).__name__.lower(),
+                                                                               str(', '.join(fields)), table.id))
+                    self.commit()
             return 'Successfully'
 
         else:
             raise SqlApiError('Not transferred to the pill classes')
 
-    def select(self, table_name):
-        return self.execute("SELECT * FROM '%s'" % table_name.lower())
-
-    def filter(self, table_name, return_type='visual', return_list=False, **where):
+    def filter(self, table_name, return_type='visual', return_list=False, where_=(), **where):
         """
         The function selects data from the database based on the specified parameters
         :param table_name: Table name
@@ -60,13 +61,18 @@ class API(RequestHandler):
         :type return_type: str
         :param return_list: If True, return the list not depending on the number of objects
         :type return_list: bool
+        :param where_: Filtering options
         :param where: Filtering options
         :return: list or object
         """
+
+        self._check_active()
+        where_ = {} if type(where_).__name__ != 'dict' else where_
         table_name = table_name.lower()
-        obj = self.get_obj(table_name)
+        obj = self._get_obj(table_name)
         obj_fields = get_fields(obj)
         condition = []
+        where = where_ if len(where) == 0 else where
 
         for key, value in where.items():
             if '_' in key:
@@ -89,7 +95,7 @@ class API(RequestHandler):
             data = self.execute("SELECT * FROM '%s' WHERE %s" % (table_name, ' and '.join(condition)))
 
         else:
-            data = self.select(table_name)
+            data = self._select(table_name)
 
         if len(data) == 0:
             return
@@ -115,8 +121,10 @@ class API(RequestHandler):
         :param values: Values of the columns
         :return: Successfully
         """
+
+        self._check_active()
         table_name = table_name.lower()
-        obj = self.get_obj(table_name)
+        obj = self._get_obj(table_name)
         obj_fields = get_fields(obj)
         fields = [i for i in obj_fields]
 
@@ -137,19 +145,49 @@ class API(RequestHandler):
         return 'Successfully'
 
     def get_class(self, table_name, data):
-        obj = self.get_obj(table_name.lower())
-        types = vars(self.get_obj(table_name.lower()))
+        """
+        Returns table class object based on its data
+        :param table_name: Table name
+        :param data: Data obtained by metod Filter
+        :return: Table class
+        """
+
+        obj = self._get_obj(table_name.lower())
+        types = obj.get_types()
         fields = get_fields(obj)
         exec("obj.id = {}".format(data[0]))
         data = data[1:]
 
         for i in range(len(fields)):
-            if types[fields[i]][1] == 'list':
-                exec("obj.{} = {}".format(fields[i], convert_to_list(add_quotes(data[i]))))
-                continue
-            exec("obj.{} = {}".format(fields[i], str(add_quotes(data[i]))))
+            if types[fields[i]][1] == 'list' or types[fields[i]][1] == 'dict':
+                exec("obj.{} = {}".format(fields[i], convert(add_quotes(data[i]))))
+            else:
+                exec("obj.{} = {}".format(fields[i], str(add_quotes(data[i]))))
 
         return obj
+
+    def add_field(self, table_name, field_name, start_value):
+        """
+        Adds a field to the table
+        :param table_name: Table name
+        :param field_name: Field name
+        :param start_value: The starting value of this field
+        :return: Successfully
+        """
+
+        self._check_active()
+        table_name = table_name.lower()
+        obj = self._get_obj(table_name)
+        obj_fields = get_fields(obj)
+
+        if field_name not in obj_fields:
+            raise SqlApiError(f'Field {field_name} not found in table class')
+
+        self._cursor.execute("ALTER TABLE '%s' ADD %s %s" % (table_name, field_name, vars(obj)[f'{field_name}'][0]))
+        self.commit()
+        self._cursor.execute("UPDATE '%s' SET %s = %s" % (table_name, field_name, str(add_quotes(start_value))))
+        self.commit()
+        return 'Successfully'
 
     def create_db(self):
         """
@@ -157,10 +195,10 @@ class API(RequestHandler):
         :return: Successfully
         """
 
-        for table in self.data_bases:
+        self._check_active()
+        for table_name, table in self._databases.items():
             fields = ''
-            table_name = type(table).__name__.lower()
-            fields_dict = vars(table)
+            fields_dict = table.get_types()
             for key, value in fields_dict.items():
                 if key != 'id':
                     fields += f'{key}{value[0]}, '
@@ -172,10 +210,31 @@ class API(RequestHandler):
             self._cursor.execute(request)
         return 'Successfully'
 
-    @staticmethod
-    def get_obj(table_name):
-        table = get(table_name.lower())
-        if table:
-            return table
+    def get_cursor(self):
+        """
+        :return: Cursor object
+        """
+        self._check_active()
+        return self._cursor
+
+    def _select(self, table_name):
+        return self.execute("SELECT * FROM '%s'" % table_name.lower())
+
+    def _get_databases(self):
+        filt = ['string', 'integer', 'list_', 'dict_', 'Table', 'data_bases']
+        databases = {}
+        for k, i in vars(self._databases).items():
+            if not k.startswith('__') and k not in filt:
+                databases[k.lower()] = i
+        self._database_names = [name for name in databases.keys()]
+        self._databases = databases
+
+    def _check_active(self):
+        if not self._active:
+            raise SqlApiError('The database file not inital')
+
+    def _get_obj(self, table_name):
+        if table_name in self._database_names:
+            return self._databases[table_name]()
         else:
             raise SqlApiError(f'Table {table_name} not found')

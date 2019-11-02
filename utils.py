@@ -13,21 +13,24 @@ def list_():
     return [" TEXT", 'list']
 
 
+def dict_():
+    return [" TEXT", 'dict']
+
+
 def add_quotes(value):
     if isinstance(value, str) or isinstance(value, list):
         value = '"{}"'.format(str(value).replace('"', "'"))
     return value
 
 
+def get_field(obj, field):
+    return vars(obj)[field]
+
+
 def get_fields(obj):
-    fields = [i for i in vars(obj).keys()]
+    fields = [i for i in obj.get_types().keys()]
     fields.remove('id')
     return fields
-
-
-def shadow_fields(obj):
-    fields = get_fields(obj)
-    return len(set(fields)) != len(fields)
 
 
 def get_visual(obj):
@@ -36,7 +39,7 @@ def get_visual(obj):
     return [i for i in vars(obj).values()]
 
 
-def convert_to_list(obj):
+def convert(obj):
     return literal_eval(obj)
 
 
