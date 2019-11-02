@@ -5,12 +5,13 @@
 
 """
 
+from sqlite3_api.test import my_tables  # Импортируем таблицы
 from sqlite3_api import API
 
 sc = 'schoolchildren'
 st = 'students'
 
-sql = API('test.sqlite')
+sql = API(my_tables, 'test.db')
 
 """ При добавлении данных нужно указать название таблицы и все поля как показано ниже """
 sql.insert(sc, first_name='Bob', last_name='Gray', age=14, cls=8, evaluation=[5, 5, 4, 5])
