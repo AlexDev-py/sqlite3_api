@@ -16,22 +16,22 @@ WARNING: Поле id в классе должно быть обязательн�
 
 """
 
-from sqlite3_api.tables import *
+from sqlite3_api.Table import *
 
 
 class SchoolChildren(Table):
-        id = None
-        first_name = string()
-        last_name = string()
-        age = integer()
-        cls = integer()
-        evaluation = list_()
+    id = None
+    first_name = string()
+    last_name = string()
+    age = integer()
+    cls = integer()
+    evaluation = list_()
 
 
 class Students(Table):
-        id = None
-        first_name = string()
-        last_name = string()
-        age = integer()
-        course = integer()
-        salary = integer()
+    id = None
+    first_name = string()
+    last_name = string()
+    age = integer()
+    course = integer()
+    salary = integer()
