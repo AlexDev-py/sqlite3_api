@@ -55,7 +55,7 @@ print("""
 print(sql.save(data))
 
 print("""
-      Сделаем тоже самое с остальными учениками
+      Сделаем то же самое с остальными учениками
 """)
 
 bob, joni = sql.filter(sc, 'classes', age=14)
@@ -70,7 +70,7 @@ print("""
       Сохранять можно сразу несколько объектов, нужно просто передать их в функцию save
 """)
 
-sql.save(bob, joni)
+print(sql.save(bob, joni))
 
 print("""
       Попробуем получить список всех учеников с мименем Bob
@@ -100,7 +100,7 @@ max_.age += 1
 max_.course += 1
 max_.salary += 500
 
-sql.save(max_, robin)
+print(sql.save(max_, robin))
 
 print("""
       Снова просмотрим все данные

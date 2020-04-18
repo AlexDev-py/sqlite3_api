@@ -17,20 +17,20 @@ def dict_():
     return [" TEXT", 'dict']
 
 
-def add_quotes(value):
+def convert_from_data(value):
     if isinstance(value, str) or isinstance(value, list):
-        value = '"{}"'.format(str(value).replace('"', "'"))
+        value = '{}'.format(str(value).replace('``', '"'))
+    return value
+
+
+def convert_from_class(value):
+    if isinstance(value, str) or isinstance(value, list):
+        value = '"{}"'.format(str(value).replace('"', "``"))
     return value
 
 
 def get_field(obj, field):
     return vars(obj)[field]
-
-
-def get_fields(obj):
-    fields = [i for i in obj.get_types().keys()]
-    fields.remove('id')
-    return fields
 
 
 def get_visual(obj):
