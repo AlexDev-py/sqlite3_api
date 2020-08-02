@@ -1,1 +1,1 @@
-See test folder
+See example folder
