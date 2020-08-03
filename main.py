@@ -48,12 +48,13 @@ class API(Sqlite3):
             )  # Старые данные
 
             # Проверяем какие поля были изменены
-            for field, value in vars(table_class).items():
-                if value != old_table_class.__getattribute__(field):
-                    updated_fields.append('{field_name}={value}'.format(
-                        field_name=field,
-                        value=convert_from_class(value)
-                    ))
+            for field_name, value in vars(table_class).items():
+                if not field_name.startswith('_'):
+                    if value != old_table_class.__getattribute__(field_name):
+                        updated_fields.append('{field_name}={value}'.format(
+                            field_name=field_name,
+                            value=convert_from_class(value)
+                        ))
 
             if len(updated_fields) != 0:
                 self.execute(
@@ -142,10 +143,7 @@ class API(Sqlite3):
 
         elif return_type == 'classes':
             data = data if isinstance(data, list) else [data]
-            classes = []
-
-            for cls in data:
-                classes.append(self.get_class(table_name, cls))
+            classes = [self.get_class(table_name, cls) for cls in data]
 
             if not return_list:
                 return classes[0] if len(classes) == 1 else classes
@@ -281,20 +279,20 @@ class API(Sqlite3):
         return 'Successfully'
 
     def _get_tables(self):
-        filt = [
+        excluded = [
             'string', 'integer', 'list_', 'dict_', 'Table', 'data_bases',
             'Dict', 'List'
         ]
-        databases = {
+        tables = {
             k.lower(): v
             for k, v in vars(self._tables).items()
-            if not k.startswith('__') and k not in filt
+            if not k.startswith('__') and k not in excluded
         }
 
         self._tables_names: List[str] = [
-            name for name in databases.keys()
+            name for name in tables.keys()
         ]
-        self._tables = databases
+        self._tables = tables
 
     def _check_active(self):
         if not self._active:
