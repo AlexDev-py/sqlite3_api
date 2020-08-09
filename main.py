@@ -280,8 +280,8 @@ class API(Sqlite3):
 
     def _get_tables(self):
         excluded = [
-            'string', 'integer', 'list_', 'dict_', 'Table', 'data_bases',
-            'Dict', 'List'
+            'string', 'integer', 'list_', 'dict_', 'text',
+            'Table', 'data_bases', 'Dict', 'List'
         ]
         tables = {
             k.lower(): v

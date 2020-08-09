@@ -6,7 +6,7 @@
 
 from typing import Dict, List
 
-from .tools import string, integer, list_, dict_
+from .tools import string, integer, list_, dict_, text
 
 
 class Table:
