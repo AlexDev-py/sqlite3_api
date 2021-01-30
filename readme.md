@@ -13,11 +13,11 @@ Install from [GitHub](https://github.com/AlexDev-py/sqlite3_api.git)
 Create table classes
 --------------------
 
-    import sqlite3_api.Table as TableTemplate
+    from sqlite3_api.Table import Table
 
-    class MyTable(TableTemplate.Table):
-        my_first_field = TableTemplate.string()
-        my_second_field = TableTemplate.integer()
+    class MyTable(Table):
+        my_first_field: str
+        my_second_field: int
 
 In file 
 [example/my_tables.py](https://github.com/AlexDev-py/sqlite3_api/blob/master/example/my_tables.py),
@@ -26,31 +26,29 @@ there is an instruction to create classes(in Russian language)
 Using
 ------------
 
-Import file with tables::
+Initiate the database:
 
-    import my_tables
+    from my_tables import MyTable 
+    my_table = MyTable('MyDataBase.sqlite')
 
-Import package::
+Create tables:
 
-    import sqlite3_api
+    my_table.create_table()
 
-Initiate the database::
+Inserting data:
 
-    sql = sqlite3_api.API(my_tables, 'file_name.db')
+    my_table.insert(
+        my_first_field='first',
+        my_second_field='second',
+    )
 
-Create tables::
+Getting data:
 
-    sql.create_db()
+    data = my_table.filter()
 
-Getting data::
+Sorting data:
 
-    table_name = 'test_table'
-    data = sql.filter(table_name)
-
-Sorting data::
-
-    table_name = 'test_table'
-    data = sql.filter(table_name, field_name='value')
+    data = my_table.filter(my_field='value')
 
 
 More information in the 
