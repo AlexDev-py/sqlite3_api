@@ -20,7 +20,7 @@ Create table classes
         my_second_field: int
 
 In file 
-[example/my_tables.py](https://github.com/AlexDev-py/sqlite3_api/blob/master/example/my_tables.py),
+[example/my_tables.py](https://github.com/AlexDev-py/sqlite3_api/blob/2.0.0/example/my_tables.py),
 there is an instruction to create classes(in Russian language)
 
 Using
@@ -52,6 +52,6 @@ Sorting data:
 
 
 More information in the 
-[example folder](https://github.com/AlexDev-py/sqlite3_api/tree/master/example)
+[example folder](https://github.com/AlexDev-py/sqlite3_api/tree/2.0.0/example)
 
 VK: [AlexDev](https://vk.com/sys.exit1)
